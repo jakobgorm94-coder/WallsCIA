@@ -12,7 +12,7 @@ let sidsteHistorie = "";  // den seneste historie, der blev sendt
 
 // ---- TEKST TIL TALE (fra talerp5) ----
 let mySpeech = new p5.Speech(); // Speech synthesis object
-mySpeech.interrupt = true;      // et nyt tryk starter forfra i stedet for at stå i kø
+let sidsteAfspilning = -1000;   // tidspunkt (millis) for seneste start af oplæsning
 
 
 function setup() {
@@ -77,6 +77,14 @@ function afspilHistorie() {
         console.log("Der er ingen historie at afspille endnu");
         return;
     }
+    // En knap kan "prelle" og sende flere beskeder for ét tryk. Hvis vi starter forfra
+    // for hver besked, hakker stemmen - så vi ignorerer tryk, mens historien læses op.
+    let synth = window.speechSynthesis;
+    if (synth.speaking || synth.pending || millis() - sidsteAfspilning < 1000) {
+        console.log("Afspiller allerede - trykket ignoreres");
+        return;
+    }
+    sidsteAfspilning = millis();
     let stemme = findDanskStemme();
     if (stemme) {
         mySpeech.utterance.voice = stemme;

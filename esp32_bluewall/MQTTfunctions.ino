@@ -1,11 +1,34 @@
 //####################### MQTT FUNCTIONS #######################
 
+// Skriver årsagen, hver gang et forsøg på at forbinde til WiFi mislykkes.
+// På sensors-netværket ser vi ofte 2 (netværket svarede ikke i tide) et antal
+// gange, før det lykkes - det er normalt, ESP'en prøver selv igen.
+void wifiHaendelse(WiFiEvent_t event, WiFiEventInfo_t info)
+{
+  if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
+    Serial.println();
+    Serial.print("WiFi afbrudt, aarsag: ");
+    Serial.println(info.wifi_sta_disconnected.reason);
+  }
+}
+
 void connectWifi() //--------------------------------------------
 {
-   while (WiFi.status() != WL_CONNECTED) 
+  WiFi.onEvent(wifiHaendelse);
+  int forsoeg = 0; // antal sekunder vi har ventet
+   while (WiFi.status() != WL_CONNECTED)
   {
     Serial.print(".");
     delay(1000);
+    forsoeg++;
+    if (forsoeg % 15 == 0 && WiFi.status() != WL_CONNECTED) {
+      // 15 sekunder uden forbindelse: start forbindelsen helt forfra
+      Serial.println();
+      Serial.println("Stadig ingen WiFi - proever forfra");
+      WiFi.disconnect();
+      delay(500);
+      WiFi.begin(ssid, pass);
+    }
   }
   Serial.println
   ("WIFI OK");
