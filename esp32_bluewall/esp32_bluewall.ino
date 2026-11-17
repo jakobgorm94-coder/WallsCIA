@@ -5,7 +5,7 @@
 
 // -- some needed global variables ---
 WiFiClient net;
-MQTTClient client(2048);
+MQTTClient client;
 JsonDocument senderBuffer;
 JsonDocument recieverBuffer;
 // ------------------------------------
@@ -20,31 +20,44 @@ const String senderID = "BlueWallESP"; //giver mulighed for at skelne mellem afs
 
 // ________NOW FOLLOWS MAIN PROGRAMS______
 
+int buttonPin23 = 23;
+int buttonPin22 = 22;
+
+bool lastbuttonstate23 = HIGH;
+bool lastbuttonstate22 = HIGH;
+
+
+
 void setup() {
   Serial.begin(9600);
   WiFi.begin(ssid, pass);
   connectWifi();
   connectMQTT();
+
+  pinMode(buttonPin23, INPUT_PULLUP);
+  pinMode(buttonPin22, INPUT_PULLUP);
+
+  
 }
 
 
 void loop() 
 {
-  // DO YOUR THING HERE
+  bool currentbuttonstate23 = digitalRead(buttonPin23);
+  bool currentbuttonstate22 = digitalRead(buttonPin22);
 
+  if (lastbuttonstate23 == HIGH && currentbuttonstate23 == LOW) {
+    Serial.println("knap 23 trykket");
 
-  sender("hej", 5, 6);
-  
+    sender("hej", 1, 0);
+  }
+  lastbuttonstate23 = currentbuttonstate23;
+  if (lastbuttonstate22 == HIGH && currentbuttonstate22 == LOW) {
+    Serial.println("knap 22 trykket");
 
-  delay(1000);
-
-  sender("davs", 55, 66);
-
-  delay(1000);
-
-  sender("ok", 1, 2);
-
-  delay(1000);
+    sender("hej", 0, 1);
+  }
+  lastbuttonstate22 = currentbuttonstate22;
 
 
 
