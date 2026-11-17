@@ -28,4 +28,5 @@ function modtager(topic, modtagetBesked) {
     val1 = modtagerBuffer.val1;
     val2 = modtagerBuffer.val2;
     val3 = modtagerBuffer.val3;
+    beskedModtaget(); // ligger i p5_mqtt_master2026.js
 }
