@@ -21,5 +21,6 @@ const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", options);
 //-- Do connect---------------------------------------
 client.on('connect', function() {
    client.subscribe(topic);
+   client.subscribe(historieTopic); // historier fra de andre vægge
    console.log("MQTT OK");
 });

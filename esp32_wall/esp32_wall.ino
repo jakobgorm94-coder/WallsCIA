@@ -16,13 +16,18 @@ const char pass[] = "FGeRiGzg";
 
 // ########### MQTT CONFIG ###########
 const String topic = "WallsCIA";
-const String senderID = "BlueWallESP"; //giver mulighed for at skelne mellem afsendere
+
+// ########### HVILKEN VÆG? ###########
+// Koden er ens på alle tre ESP'er - kun denne linje skal rettes, før der uploades.
+// Skriv "Red", "Blue" eller "Yellow" (præcis sådan, med stort begyndelsesbogstav).
+const String vaeg = "Blue";
+const String senderID = vaeg + "WallESP"; //fx "BlueWallESP" - websiden lytter kun til sin egen vægs ESP
 
 // ________NOW FOLLOWS MAIN PROGRAMS______
 
-int buttonPin23 = 23;
-int buttonPin22 = 22;
-int buttonPin21 = 21; // ny knap - ret tallet, hvis den sidder på en anden pin
+int buttonPin21 = 21; // knap 1: afspil en historie
+int buttonPin22 = 22; // knap 2: start optagelse
+int buttonPin23 = 23; // knap 3: stop optagelse og send historien
 
 // Et tryk tæller først, når knappen har været holdt stabilt nede i debounceTid
 // millisekunder. Så bliver støj og "prel" på pinnen ikke til falske tryk.
@@ -44,6 +49,7 @@ unsigned long sidstAendret21 = 0;
 
 void setup() {
   Serial.begin(9600);
+  WiFi.onEvent(wifiHaendelse); // skriver årsagen, hvis WiFi ikke kan forbinde
   WiFi.begin(ssid, pass);
   connectWifi();
   connectMQTT();
@@ -72,8 +78,15 @@ bool knapTrykket(int pin, bool &stabil, bool &sidstLaest, unsigned long &sidstAe
 }
 
 
-void loop() 
+void loop()
 {
+  // Hvis forbindelsen er røget, forbinder vi igen - ellers virker knapperne ikke
+  if (!client.connected()) {
+    Serial.println("Forbindelsen er tabt - forbinder igen");
+    connectWifi();
+    connectMQTT();
+  }
+
   if (knapTrykket(buttonPin23, stabil23, sidstLaest23, sidstAendret23)) {
     Serial.println("knap 23 trykket");
 

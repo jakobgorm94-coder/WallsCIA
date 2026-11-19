@@ -14,7 +14,6 @@ void wifiHaendelse(WiFiEvent_t event, WiFiEventInfo_t info)
 
 void connectWifi() //--------------------------------------------
 {
-  WiFi.onEvent(wifiHaendelse);
   int forsoeg = 0; // antal sekunder vi har ventet
    while (WiFi.status() != WL_CONNECTED)
   {
