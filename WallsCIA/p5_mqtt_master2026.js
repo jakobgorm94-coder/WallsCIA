@@ -4,10 +4,20 @@ const historieTopic = "WallsCIA/historier";  // historier, der sendes mellem væ
 // ---- HVILKEN VÆG ER DETTE? ----
 // Koden er ens på alle tre computere. Første gang siden åbnes, vælger man væg,
 // og valget huskes i browseren. Man kan også vælge i adressen: index.html?wall=red
+//
+// Hver væg har sin egen danske stemme. "stemmer" er en ønskeliste: den første stemme,
+// der findes på computeren, bliver brugt. "navn" er en del af stemmens navn, og
+// "tonehoejde" gør stemmen dybere (under 1) eller lysere (over 1).
+//
+// Edge har tre danske stemmer (Christel, Jeppe og Helle). Chrome har kun Helle,
+// så dér får væggene den samme stemme i tre forskellige tonehøjder.
 const VAEGGE = {
-    Red:    { navn: "Rød væg", farve: [220, 60, 60] },
-    Blue:   { navn: "Blå væg", farve: [70, 110, 230] },
-    Yellow: { navn: "Gul væg", farve: [240, 200, 40] }
+    Red:    { navn: "Rød væg", farve: [220, 60, 60],
+              stemmer: [{ navn: "Christel", tonehoejde: 1 }, { navn: "Helle", tonehoejde: 1.5 }] },
+    Blue:   { navn: "Blå væg", farve: [70, 110, 230],
+              stemmer: [{ navn: "Jeppe", tonehoejde: 1 }, { navn: "Helle", tonehoejde: 0.5 }] },
+    Yellow: { navn: "Gul væg", farve: [240, 200, 40],
+              stemmer: [{ navn: "Helle", tonehoejde: 1 }, { navn: "Jeppe", tonehoejde: 0.6 }] }
 };
 let vaeg = "";        // "Red", "Blue" eller "Yellow"
 let afsenderID = "";  // denne sides navn i beskeder, fx "RedWallWeb"
@@ -261,24 +271,37 @@ function afspilHistorie() {
     aktuelHistorie = historier[nr].tekst;
     console.log("Afspiller historie " + (nr + 1) + " af " + historier.length + " (fra " + historier[nr].fra + ")");
 
-    let stemme = findDanskStemme();
-    if (stemme) {
-        mySpeech.utterance.voice = stemme;
-        console.log("Afspiller med stemmen: " + stemme.name);
+    let valg = findVaeggensStemme();
+    if (valg.stemme) {
+        mySpeech.utterance.voice = valg.stemme;
+        console.log("Afspiller med stemmen: " + valg.stemme.name + " (tonehøjde " + valg.tonehoejde + ")");
     } else {
         console.log("Ingen dansk stemme fundet - bruger browserens standardstemme");
     }
+    mySpeech.utterance.pitch = valg.tonehoejde;
     mySpeech.utterance.lang = "da-DK";
     mySpeech.speak(aktuelHistorie);
 }
 
-// Finder en dansk stemme i browseren (helst en af de naturlige stemmer i Edge).
-// Stemmerne er forskellige fra computer til computer, så vi vælger efter sprog
-// og ikke efter et fast nummer.
-function findDanskStemme() {
+// Finder denne vægs stemme blandt browserens danske stemmer.
+// Stemmerne er forskellige fra computer til computer, så vi vælger efter sprog og
+// navn og ikke efter et fast nummer. Kun danske stemmer kan blive valgt.
+function findVaeggensStemme() {
     let danske = window.speechSynthesis.getVoices().filter(s => s.lang.toLowerCase().startsWith("da"));
+
+    // Gå væggens ønskeliste igennem og brug den første stemme, der findes
+    for (let oenske of VAEGGE[vaeg].stemmer) {
+        let fundet = danske.find(s => s.name.includes(oenske.navn));
+        if (fundet) {
+            return { stemme: fundet, tonehoejde: oenske.tonehoejde };
+        }
+    }
+
+    // Ingen af væggens stemmer findes her: brug en anden dansk stemme
+    // (helst en af de naturlige stemmer i Edge)
+    console.log("Væggens egen stemme findes ikke på denne computer - bruger en anden dansk stemme");
     let naturlig = danske.find(s => s.name.includes("Natural"));
-    return naturlig || danske[0];
+    return { stemme: naturlig || danske[0], tonehoejde: 1 };
 }
 
 
