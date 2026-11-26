@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <MQTT.h> //v. 2.5.3
 #include <ArduinoJson.h> //v. 7.4.3
-#include <FastLED.h>
 
 // -- some needed global variables ---
 WiFiClient net;
@@ -37,15 +36,6 @@ const int NAER_CM = 100; // nogen er "tæt på", når de er under 1 meter fra se
 const int VAEK_CM = 120; // de er først "gået" igen, når de er over 1,2 meter væk
 const bool VIS_AFSTAND = true; // skriver afstanden i Serial Monitor hvert sekund. Sæt til false for at slå det fra
 
-// ########### LED-STRIP ###########
-#define LED_PIN 19
-#define LED_TYPE WS2812B          // typen af strip - ret, hvis jeres er en anden
-#define FARVE_RAEKKEFOELGE GRB    // ret til RGB, hvis farverne er byttet om
-const int ANTAL_LEDS = 20;        // to strips med 10 LED'er hver
-const int LYSSTYRKE = 120;        // 0-255. Højere tal bruger mere strøm
-const CRGB LYS_FARVE = CRGB(0, 255, 180); // turkis/cyan (rød, grøn, blå - hver 0-255)
-CRGB leds[ANTAL_LEDS];
-
 // Et tryk tæller først, når knappen har været holdt stabilt nede i debounceTid
 // millisekunder. Så bliver støj og "prel" på pinnen ikke til falske tryk.
 const unsigned long debounceTid = 50;
@@ -66,7 +56,7 @@ unsigned long sidstAendret21 = 0;
 
 void setup() {
   Serial.begin(9600);
-  opsaetNaerhed(); // afstandssensor og LED-strip (ligger i naerhed.ino)
+  opsaetNaerhed(); // afstandssensor (ligger i naerhed.ino)
   WiFi.onEvent(wifiHaendelse); // skriver årsagen, hvis WiFi ikke kan forbinde
   WiFi.begin(ssid, pass);
   connectWifi();
@@ -109,13 +99,11 @@ void loop()
     Serial.println("knap 23 trykket");
 
     sender("hej", 1, 0, 0);
-    optagelseAfsluttet(); // slukker lyset, hvis der var en optagelse i gang (naerhed.ino)
   }
   if (knapTrykket(buttonPin22, stabil22, sidstLaest22, sidstAendret22)) {
     Serial.println("knap 22 trykket");
 
     sender("hej", 0, 1, 0);
-    optagelseStartet(); // (naerhed.ino)
   }
   if (knapTrykket(buttonPin21, stabil21, sidstLaest21, sidstAendret21)) {
     Serial.println("knap 21 trykket");
@@ -126,7 +114,7 @@ void loop()
 
 
   
-  opdaterNaerhed(); // afstandssensor og LED-strip (ligger i naerhed.ino)
+  opdaterNaerhed(); // afstandssensor (ligger i naerhed.ino)
 
   client.loop(); //keep MQTT running
 }
