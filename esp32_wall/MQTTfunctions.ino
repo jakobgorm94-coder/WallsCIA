@@ -18,7 +18,7 @@ void connectWifi() //--------------------------------------------
    while (WiFi.status() != WL_CONNECTED)
   {
     Serial.print(".");
-    delay(1000);
+    ventMedSensor(1000); // vent 1 sekund - sensor og lys kører imens
     forsoeg++;
     if (forsoeg % 15 == 0 && WiFi.status() != WL_CONNECTED) {
       // 15 sekunder uden forbindelse: start forbindelsen helt forfra
@@ -51,7 +51,7 @@ void connectMQTT() //--------------------------------------------
 
   //--- DO THE MQTT CONNECT -----
   while (!client.connect(userID)){
-    delay(1000);
+    ventMedSensor(1000); // vent 1 sekund - sensor og lys kører imens
   }
   Serial.println("MQTT OK");
 
