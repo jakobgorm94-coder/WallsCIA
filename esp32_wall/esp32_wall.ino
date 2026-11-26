@@ -54,19 +54,25 @@ unsigned long sidstAendret21 = 0;
 
 
 
+// Knaptryk, der venter på at blive sendt. Hvis forbindelsen er nede, når der
+// trykkes, gemmes trykket her og sendes, så snart ESP'en er på nettet igen.
+// Plads 0 = knap 23, plads 1 = knap 22, plads 2 = knap 21. 0 betyder "intet venter".
+unsigned long ventendeTryk[3] = {0, 0, 0};
+const unsigned long MAX_VENTETID = 8000; // tryk, der har ventet længere end 8 sekunder, droppes
+
+
+
 void setup() {
   Serial.begin(9600);
   opsaetNaerhed(); // afstandssensor (ligger i naerhed.ino)
-  WiFi.onEvent(wifiHaendelse); // skriver årsagen, hvis WiFi ikke kan forbinde
-  WiFi.begin(ssid, pass);
-  connectWifi();
-  connectMQTT();
 
   pinMode(buttonPin23, INPUT_PULLUP);
   pinMode(buttonPin22, INPUT_PULLUP);
   pinMode(buttonPin21, INPUT_PULLUP);
 
-  
+  // Starter forbindelsen til WiFi og MQTT. Vi venter IKKE her på, at den er klar -
+  // det klarer loop(), så knapper og sensor virker med det samme.
+  startForbindelse(); // ligger i MQTTfunctions.ino
 }
 
 // Returnerer true præcis én gang pr. tryk: når knappen er gået fra sluppet til
@@ -85,35 +91,50 @@ bool knapTrykket(int pin, bool &stabil, bool &sidstLaest, unsigned long &sidstAe
   return false;
 }
 
+// Sender de knaptryk, der venter - men kun når vi er forbundet
+void sendVentendeTryk()
+{
+  if (!client.connected()) {
+    return; // trykkene bliver liggende, til forbindelsen er tilbage
+  }
+  for (int i = 0; i < 3; i++) {
+    if (ventendeTryk[i] == 0) {
+      continue; // intet tryk venter på denne knap
+    }
+    if (millis() - ventendeTryk[i] > MAX_VENTETID) {
+      Serial.println("Et knaptryk blev droppet - forbindelsen var nede for laenge");
+    } else if (i == 0) {
+      sender("hej", 1, 0, 0); // knap 23: stop optagelse og send historien
+    } else if (i == 1) {
+      sender("hej", 0, 1, 0); // knap 22: start optagelse
+    } else {
+      sender("hej", 0, 0, 1); // knap 21: afspil en historie
+    }
+    ventendeTryk[i] = 0;
+  }
+}
+
 
 void loop()
 {
-  // Hvis forbindelsen er røget, forbinder vi igen - ellers virker knapperne ikke
-  if (!client.connected()) {
-    Serial.println("Forbindelsen er tabt - forbinder igen");
-    connectWifi();
-    connectMQTT();
-  }
+  // Holder WiFi og MQTT forbundet uden at stoppe resten af programmet
+  vedligeholdForbindelse(); // ligger i MQTTfunctions.ino
 
+  // Knapperne læses altid - også mens forbindelsen er nede
   if (knapTrykket(buttonPin23, stabil23, sidstLaest23, sidstAendret23)) {
     Serial.println("knap 23 trykket");
-
-    sender("hej", 1, 0, 0);
+    ventendeTryk[0] = max(millis(), 1UL);
   }
   if (knapTrykket(buttonPin22, stabil22, sidstLaest22, sidstAendret22)) {
     Serial.println("knap 22 trykket");
-
-    sender("hej", 0, 1, 0);
+    ventendeTryk[1] = max(millis(), 1UL);
   }
   if (knapTrykket(buttonPin21, stabil21, sidstLaest21, sidstAendret21)) {
     Serial.println("knap 21 trykket");
-
-    sender("hej", 0, 0, 1);
+    ventendeTryk[2] = max(millis(), 1UL);
   }
+  sendVentendeTryk();
 
-
-
-  
   opdaterNaerhed(); // afstandssensor (ligger i naerhed.ino)
 
   client.loop(); //keep MQTT running

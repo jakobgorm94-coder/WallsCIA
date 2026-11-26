@@ -45,17 +45,6 @@ void sendNaerhed(bool naer)
   sidsteNaerBesked = millis();
 }
 
-// Venter et antal millisekunder, mens sensoren bliver ved med at køre.
-// Bruges, mens ESP'en forbinder til WiFi, så sensoren virker, selvom nettet er langsomt.
-void ventMedSensor(unsigned long ms)
-{
-  unsigned long start = millis();
-  while (millis() - start < ms) {
-    opdaterNaerhed();
-    delay(5);
-  }
-}
-
 // Kaldes hele tiden fra loop()
 void opdaterNaerhed()
 {
